@@ -13,8 +13,8 @@ ctx.fillStyle = "#000"
 ctx.fillRect(0,0,width,height)
 ctx.translate(width/2,height/2)
 
-let fov = 50;
-let scale = 10;
+let fov = 50;       //camera distance from "screen"
+let scale = 10;     //position of the cubes
 
 //Angulos alpha, beta e gamma = an, bn, gn respectivamente
 let an = 0
@@ -70,8 +70,9 @@ function rotateZYX(ax,ay,az,bx,by,bz)
     return [[x1,y1,z1],[x2,y2,z2]]
 }
 
+let mouse = {x:0,y:0};
 
-function Change()
+function Change(rotate)
 {
     ctx.fillStyle = "#000"
     ctx.fillRect(-width,-height,width*2,height*2) 
@@ -104,21 +105,38 @@ function Change()
         let projectedX2 = ((x2*fov)/(z2+fov))*10;     // projectedX = (x*fov)/z+fov;
         let projectedY2 = ((y2*fov)/(z2+fov))*10;     // projectedY = (y*fov)/z+fov;
     
-        DrawLine(projectedX1,projectedY1,projectedX2,projectedY2,"#fff")
+        DrawLine(projectedX1,projectedY1,projectedX2, projectedY2,"#fff")
 
     }
-    an+=0.01
-    bn+=0.01
-    gn+=0.01
+    if(rotate == true)
+    {
+        an+=0.01
+        bn+=0.01
+        gn+=0.01
+
+    }
 }
 
-Change()
+Change(false)
 
 document.addEventListener("keypress", e=>
 {
     if(e.key == 'Enter'){
         setInterval(()=>{
-            Change()
+            Change(true)
         },10)
     }
+})
+
+quadro.addEventListener("mousemove", e=>
+{
+    mouse = {x:(e.x - width/2)/10,y:(e.y - height/2)/10};
+    points = 
+    [
+        [-scale+mouse.x,-scale+mouse.y,-scale],[-scale+mouse.x,-scale+mouse.y,scale],
+        [scale+mouse.x,-scale+mouse.y,-scale],[-scale+mouse.x,scale+mouse.y,-scale],
+        [-scale+mouse.x,scale+mouse.y,scale],[scale+mouse.x,-scale+mouse.y,scale],
+        [scale+mouse.x,scale+mouse.y,-scale],[scale+mouse.x,scale+mouse.y,scale]
+    ]
+    Change(false)
 })
