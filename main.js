@@ -9,52 +9,53 @@ quadro.height = quadro.clientHeight
 let width = quadro.width
 let height = quadro.height
 
+//background color black
 ctx.fillStyle = "#000"
 ctx.fillRect(0,0,width,height)
 ctx.translate(width/2,height/2)
 
-let fov = 50;           // camera distance from "screen"
-let scale = 10;         // size of mesh
-let mouse = {x:0,y:0};  // mouse pos
-let animate = false
+let fov = 50;               // camera distance from "screen"
+let scale = 10;             // size of mesh
+let mouse = {x:0,y:0};      // mouse pos
+let animate = false;
 
 class Mesh
 {
     constructor(scale, points, vertices, rotate, color)
     {
-        this.scale = scale
-        this.points = points
+        this.scale = scale;
+        this.points = points;
 
         for(let i = 0; i < this.points.length; i++)
-        {
-        for(let index = 0; index < this.points[i].length; index++)
-            {
-                this.points[i][index] *= this.scale
-            }
-        }
+            for(let index = 0; index < this.points[i].length; index++)
+                this.points[i][index] *= this.scale;
 
-        this.vertices = vertices
-        this.rotate = rotate
-        this.color = color
+        this.vertices = vertices;
+        this.rotate = rotate;
+        this.color = color;
 
-        //Angulos alpha, beta e gamma = an, bn, gn respectivamente
-        this.an = 0
-        this.bn = 0
-        this.gn = 0
+        //alpha, beta and gamma angles = an, bn, gn respectively
+        this.an = 0;
+        this.bn = 0;
+        this.gn = 0;
 
-        // sin e cos separados para facilitar a semantica do rotate
-        this.san = Math.sin(this.an)
-        this.sbn = Math.sin(this.bn)
-        this.sgn = Math.sin(this.gn)
+        // sin and cos angles
+        this.san = Math.sin(this.an);
+        this.sbn = Math.sin(this.bn);
+        this.sgn = Math.sin(this.gn);
 
-        this.can = Math.cos(this.an)
-        this.cbn = Math.cos(this.bn)
-        this.cgn = Math.cos(this.gn)
+        this.can = Math.cos(this.an);
+        this.cbn = Math.cos(this.bn);
+        this.cgn = Math.cos(this.gn);
 
-        this.projectedX1    // projectedX = (x*fov)/z+fov
-        this.projectedY1    // projectedY = (y*fov)/z+fov
-        this.projectedX2    // projectedX = (x*fov)/z+fov
-        this.projectedY2    // projectedY = (y*fov)/z+fov
+        // projectedX = (x*fov)/z+fov
+        // projectedY = (y*fov)/z+fov
+        this.projectedX1;
+        this.projectedY1;
+        this.projectedX2;
+        this.projectedY2;
+        this.projectedX3;
+        this.projectedY3;
     }
 
     Calculate()
@@ -64,28 +65,34 @@ class Mesh
 
         this.projectedX2 = ((this.x2*fov)/(this.z2+fov))*this.scale;
         this.projectedY2 = ((this.y2*fov)/(this.z2+fov))*this.scale;
+
+        this.projectedX3 = ((this.x3*fov)/(this.z3+fov))*this.scale;
+        this.projectedY3 = ((this.y3*fov)/(this.z3+fov))*this.scale;
     }
 
-    DrawLine(x1,y1,x2,y2,lineColor)
+    DrawTriangle(x1,y1,x2,y2,x3,y3,lineColor)
     {
-        ctx.strokeStyle = lineColor
-        ctx.lineWidth = 1
-        ctx.beginPath()
-        ctx.moveTo(x1,y1)
-        ctx.lineTo(x2,y2)
-        ctx.stroke()
-    }
-
-    DrawCircle(x,y,size)
-    {
-        ctx.beginPath()
-        ctx.arc(x, y, size, 0, 2 * Math.PI, false);
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = '#fff';
+        ctx.strokeStyle = lineColor;
+        ctx.lineWidth = .5;
+        ctx.beginPath();
+        ctx.moveTo(x1,y1);
+        ctx.lineTo(x2,y2);
+        ctx.lineTo(x3,y3);
+        ctx.lineTo(x1,y1);
         ctx.stroke();
     }
+    DrawFace(x1,y1,x2,y2,x3,y3,color)
+    {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(x1,y1);
+        ctx.lineTo(x2,y2);
+        ctx.lineTo(x3,y3);
+        ctx.closePath();
+        ctx.fill();
+    }
 
-    RotateZYX(ax,ay,az,bx,by,bz)
+    RotateZYX(ax,ay,az,bx,by,bz,cx,cy,cz)
     {
         // rotation on zyx axis
         this.x1 = (this.cbn * this.cgn * ax) - (this.sgn * this.can * ay) + (this.cgn * this.san * this.sbn * ay) + (this.san * this.sgn * az) + (this.cgn * this.can * this.sbn * az);
@@ -95,27 +102,52 @@ class Mesh
         this.x2 = (this.cbn * this.cgn * bx) - (this.sgn * this.can * by) + (this.cgn * this.san * this.sbn * by) + (this.san * this.sgn * bz) + (this.cgn * this.can * this.sbn * bz);
         this.y2 = (this.cbn * this.sgn * bx) + (this.cgn * this.can * by) + (this.san * this.sgn * this.sbn * by) - (this.cgn * this.san * bz) + (this.sgn * this.can * this.sbn * bz);
         this.z2 = -(this.sbn * bx) + (this.cbn * this.san * by) + (this.cbn * this.can * bz);
+
+        this.x3 = (this.cbn * this.cgn * cx) - (this.sgn * this.can * cy) + (this.cgn * this.san * this.sbn * cy) + (this.san * this.sgn * cz) + (this.cgn * this.can * this.sbn * cz);
+        this.y3 = (this.cbn * this.sgn * cx) + (this.cgn * this.can * cy) + (this.san * this.sgn * this.sbn * cy) - (this.cgn * this.san * cz) + (this.sgn * this.can * this.sbn * cz);
+        this.z3 = -(this.sbn * cx) + (this.cbn * this.san * cy) + (this.cbn * this.can * cz);
     }
 
-    RotateX()
+    RotateXPos()
     {
-        this.an+=0.01
-        this.san = Math.sin(this.an)
-        this.can = Math.cos(this.an)
+        this.an+=0.01;
+        this.san = Math.sin(this.an);
+        this.can = Math.cos(this.an);
     }
 
-    RotateY()
+    RotateXNeg()
     {
-        this.bn+=0.01
-        this.sbn = Math.sin(this.bn)
-        this.cbn = Math.cos(this.bn)
+        this.an-=0.01;
+        this.san = Math.sin(this.an);
+        this.can = Math.cos(this.an);
     }
 
-    RotateZ()
+    RotateYPos()
     {
-        this.gn+=0.01
-        this.sgn = Math.sin(this.gn)
-        this.cgn = Math.cos(this.gn)
+        this.bn+=0.01;
+        this.sbn = Math.sin(this.bn);
+        this.cbn = Math.cos(this.bn);
+    }
+
+    RotateYNeg()
+    {
+        this.bn-=0.01;
+        this.sbn = Math.sin(this.bn);
+        this.cbn = Math.cos(this.bn);
+    }
+
+    RotateZPos()
+    {
+        this.gn+=0.01;
+        this.sgn = Math.sin(this.gn);
+        this.cgn = Math.cos(this.gn);
+    }
+
+    RotateZNeg()
+    {
+        this.gn-=0.01;
+        this.sgn = Math.sin(this.gn);
+        this.cgn = Math.cos(this.gn);
     }
 
     Change()
@@ -123,91 +155,65 @@ class Mesh
         for(let x = 0; x < this.vertices.length; x++)
         {
 
-            this.RotateZYX(this.points[this.vertices[x][0]][0],this.points[this.vertices[x][0]][1],this.points[this.vertices[x][0]][2],this.points[this.vertices[x][1]][0],this.points[this.vertices[x][1]][1],this.points[this.vertices[x][1]][2])
+            this.RotateZYX(this.points[this.vertices[x][0]][0],
+                           this.points[this.vertices[x][0]][1],
+                           this.points[this.vertices[x][0]][2],
+                           this.points[this.vertices[x][1]][0],
+                           this.points[this.vertices[x][1]][1],
+                           this.points[this.vertices[x][1]][2],
+                           this.points[this.vertices[x][2]][0],
+                           this.points[this.vertices[x][2]][1],
+                           this.points[this.vertices[x][2]][2]);
 
-            this.Calculate()
-                        
-            this.DrawLine(this.projectedX1,this.projectedY1,this.projectedX2, this.projectedY2,this.color)
-            this.DrawCircle(this.projectedX1,this.projectedY1,10)
+            this.Calculate();
 
-            this.DrawCircle(this.projectedX2,this.projectedY2,10)
+            this.DrawFace(this.projectedX1,
+                          this.projectedY1,
+                          this.projectedX2, 
+                          this.projectedY2,
+                          this.projectedX3,
+                          this.projectedY3,
+                          `hsla(275, 100.00%, 50.00%,0.10)`);
+
+            this.DrawTriangle(this.projectedX1,
+                          this.projectedY1,
+                          this.projectedX2, 
+                          this.projectedY2,
+                          this.projectedX3,
+                          this.projectedY3,
+                          this.color);
+
 
         }
         if(this.rotate == true)
         {
-            this.RotateX()
-            this.RotateY()
-            this.RotateZ()
+            this.RotateXPos();
+            this.RotateYPos();
+            this.RotateZPos();
         }
     }
 }
 
 let cubePoints = 
 [
-    [-1,-1,-1], [-1,-1,1],
-    [1,-1,-1],  [-1,1,-1],
-    [-1,1,1],   [1,-1,1],
-    [1,1,-1],   [1,1,1]
+    [-1,-1,1],  [1,-1,1],
+    [-1,1,1],   [1,1,1],
+    [-1,1,-1],  [1,1,-1],
+    [1,-1,-1],  [-1,-1,-1]
 ]
 
 let cubeVertices = 
 [
-    [0,1],[2,5],[1,5],
-    [0,2],[3,4],[6,7],
-    [3,6],[4,7],[0,3],
-    [2,6],[1,4],[5,7]
+    [0,1,2],[1,2,3],
+    [4,5,6],[4,6,7],
+    [1,3,5],[1,5,6],
+    [2,4,7],[0,2,7],
+    [0,1,7],[1,6,7],
+    [2,4,5],[2,3,5]
 ]
 
-// let piramidPoints = 
-// [
-//     [-1,1,1],   [-1,1,-1],
-//     [1,1,-1],   [1,1,1],
-//     [0,-1,0]
-// ]
-
-// let piramidVertices = 
-// [
-//     [0,1],[0,3],[0,4],
-//     [1,2],[1,4],[2,3],
-//     [2,4],[3,4]
-// ]
-
-// let collapsedCubePoints = 
-// [
-//     [-1,-1,-1], [-1,-1,1],
-//     [1,-1,-1],  [-1,1,-1],
-//     [-1,1,1],   [1,-1,1],
-//     [1,1,-1],   [1,1,1],
-//     [0,0,0]
-// ]
-
-// let collapsedCubeVertices = 
-// [
-//     [0,8],[1,8],[2,8],
-//     [3,8],[4,8],[5,8],
-//     [6,8],[7,8]
-// ]
-
-// let trianglePoints = 
-// [
-//     [-1,1,-1],   [1,1,-1],
-//     [0,-1,0]
-// ]
-
-// let triangleVertices = 
-// [
-//     [0,1],[0,2],
-//     [1,2]
-// ]
-
-let cube = new Mesh(scale,cubePoints,cubeVertices,false,"#fff")
-cube.Change()
-
-// let piramid = new Mesh(scale,piramidPoints,piramidVertices,false,"#fff")
-// piramid.Change()
-
-// let collapsedCube = new Mesh(scale,collapsedCubePoints,collapsedCubeVertices,false,"#fff")
-// collapsedCube.Change()
+let mesh = new Mesh(scale,cubePoints,cubeVertices,false,"#fff")
+mesh.Change()
 
 document.addEventListener("keypress", e=>
 {
@@ -218,74 +224,44 @@ document.addEventListener("keypress", e=>
             ctx.fillRect(-width,-height,width*2,height*2)
             if(animate == true)
             { 
-                cube.rotate = true
-                cube.Change()
-
-                // piramid.rotate = true
-                // piramid.Change()
-                
-                // collapsedCube.rotate = true
-                // collapsedCube.Change()
+                mesh.rotate = true
             }else
             {
-                cube.rotate = false
-                cube.Change()
-
-                // piramid.rotate = false
-                // piramid.Change()
-                
-                // collapsedCube.rotate = false
-                // collapsedCube.Change()
+                mesh.rotate = false
                 clearInterval(interval)
             }
+            mesh.Change()
         },10)
     }
 })
 
 document.addEventListener("keypress", e=>
 {
-    ctx.fillStyle = "#000"
-    ctx.fillRect(-width,-height,width*2,height*2) 
-    switch (e.key) {
-    case '1':
-        cube.rotate = false
-        cube.RotateX()
-        cube.Change()
-
-        // piramid.rotate = false
-        // piramid.RotateX()
-        // piramid.Change()
-
-        // collapsedCube.rotate = false
-        // collapsedCube.RotateX()
-        // collapsedCube.Change()
-        break;
-    case '2':
-        
-        cube.rotate = false
-        cube.RotateY()
-        cube.Change()
-
-        // piramid.rotate = false
-        // piramid.RotateY()
-        // piramid.Change()
-
-        // collapsedCube.rotate = false
-        // collapsedCube.RotateY()
-        // collapsedCube.Change()
-        break;
-    case '3':
-        cube.rotate = false
-        cube.RotateZ()
-        cube.Change()
-
-        // piramid.rotate = false
-        // piramid.RotateZ()
-        // piramid.Change()
-
-        // collapsedCube.rotate = false
-        // collapsedCube.RotateZ()
-        // collapsedCube.Change()
-        break;
-    }
+        ctx.fillStyle = "#000"
+        ctx.fillRect(-width,-height,width*2,height*2)
+        switch (e.key) 
+        {
+            case '1':
+                mesh.RotateXPos()
+                break;
+            case '2':
+                mesh.RotateYPos()
+                break;
+            case '3':
+                mesh.RotateZPos()
+                break;
+            case '4':
+                mesh.RotateXNeg()
+                break;
+            case '5':
+                mesh.RotateYNeg()
+                break;
+            case '6':
+                mesh.RotateZNeg()
+                break;
+            default:
+                mesh.Change()
+                break;
+        }
+        mesh.Change()
 })
