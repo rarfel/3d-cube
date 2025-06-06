@@ -3,7 +3,7 @@ Using weak projection to achieve 3d images.
 
 ## Weak Projection
 `(x*fov)/z+fov`
-It envolves on calculanting a 3d point using some `x` and `y` coordinates, and adjusting the "distance within the world" with a `z` component.  
+Its used to calculate a 3d point using some `x` and `y` coordinates, and adjusting the "distance within the world" with a `z` component.  
 The `fov` is the camera distance.
 
  
